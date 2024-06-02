@@ -71,6 +71,7 @@ io.on('connection', (socket) => {
             if (
                 gameState.turnOrder[gameState.currentPlayer] === playerNumber &&
                 isValidMove(startRow, startCol, endRow, endCol, playerNumber) &&
+                isPathClear(startRow, startCol, endRow, endCol, playerNumber) &&
                 movingMonster.roundPlaced < gameState.rounds &&
                 !gameState.movedMonsters.has(movingMonster)
             ) {
@@ -214,6 +215,40 @@ function isValidMove(fromRow, fromCol, toRow, toCol, playerNumber) {
     if (rowDiff === 0 || colDiff === 0) return true;
 
     return false;
+}
+
+function isPathClear(fromRow, fromCol, toRow, toCol, playerNumber) {
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+
+    if (rowDiff > 0 && colDiff === 0) {
+        const step = (toRow - fromRow) / rowDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            const intermediateCell = gameState.board[fromRow + i * step][fromCol];
+            if (intermediateCell && intermediateCell.player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (colDiff > 0 && rowDiff === 0) {
+        const step = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < colDiff; i++) {
+            const intermediateCell = gameState.board[fromRow][fromCol + i * step];
+            if (intermediateCell && intermediateCell.player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (rowDiff === colDiff) {
+        const rowStep = (toRow - fromRow) / rowDiff;
+        const colStep = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            const intermediateCell = gameState.board[fromRow + i * rowStep][fromCol + i * colStep];
+            if (intermediateCell && intermediateCell.player !== playerNumber) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function getPlayerNumber(socketId) {
