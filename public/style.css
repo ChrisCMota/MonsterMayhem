@@ -19,13 +19,13 @@ body {
 .grid-item {
     width: 40px;
     height: 40px;
-    border: 2px solid grey;
+    border: 2px solid grey; /* Default border */
     display: flex;
     justify-content: center;
     align-items: center;
     background-size: cover;
     background-position: center;
-    background-color: white;
+    background-color: white; /* Set default background color */
 }
 
 .grid-item.player-1 { border-color: blue; }

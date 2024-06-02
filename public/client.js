@@ -78,13 +78,12 @@ function handleCellClick(event) {
     const cellContent = gameState.board[row][col];
 
     if (!movePhase) {
-        // Placing monster phase
         const monsterType = document.getElementById('monster-type').value;
         if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
             if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                 console.log('Placing new monster:', { playerNumber, monsterType, position: { row, col } });
                 socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
-                movePhase = true; // Switch to move phase after placing a monster
+                movePhase = true;
             }
         } else {
             console.log("Invalid placement. You can only place one monster per turn.");
@@ -185,9 +184,36 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
     const rowDiff = Math.abs(toRow - fromRow);
     const colDiff = Math.abs(toCol - fromCol);
+
     if (rowDiff === colDiff && rowDiff <= 2) return true;
     if (rowDiff === 0 || colDiff === 0) return true;
-    return false;
+
+    // Check if path is clear (no other player's monsters in the way)
+    if (rowDiff > 0 && colDiff === 0) {
+        const step = (toRow - fromRow) / rowDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            if (gameState.board[fromRow + i * step][fromCol] && gameState.board[fromRow + i * step][fromCol].player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (colDiff > 0 && rowDiff === 0) {
+        const step = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < colDiff; i++) {
+            if (gameState.board[fromRow][fromCol + i * step] && gameState.board[fromRow][fromCol + i * step].player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (rowDiff === colDiff) {
+        const rowStep = (toRow - fromRow) / rowDiff;
+        const colStep = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            if (gameState.board[fromRow + i * rowStep][fromCol + i * colStep] && gameState.board[fromRow + i * rowStep][fromCol + i * colStep].player !== playerNumber) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function clearHighlights() {

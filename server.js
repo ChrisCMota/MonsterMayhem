@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
 
             if (
                 gameState.turnOrder[gameState.currentPlayer] === playerNumber &&
-                isValidMove(startRow, startCol, endRow, endCol) &&
+                isValidMove(startRow, startCol, endRow, endCol, playerNumber) &&
                 movingMonster.roundPlaced < gameState.rounds &&
                 !gameState.movedMonsters.has(movingMonster)
             ) {
@@ -189,7 +189,7 @@ function isValidPlacement(playerNumber, row, col) {
     return false;
 }
 
-function isValidMove(fromRow, fromCol, toRow, toCol) {
+function isValidMove(fromRow, fromCol, toRow, toCol, playerNumber) {
     const movingMonster = gameState.board[fromRow][fromCol];
     if (!movingMonster) return false;
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
@@ -200,7 +200,32 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (rowDiff === colDiff && rowDiff <= 2) return true;
     if (rowDiff === 0 || colDiff === 0) return true;
 
-    return false;
+    // Check if path is clear (no other player's monsters in the way)
+    if (rowDiff > 0 && colDiff === 0) {
+        const step = (toRow - fromRow) / rowDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            if (gameState.board[fromRow + i * step][fromCol] && gameState.board[fromRow + i * step][fromCol].player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (colDiff > 0 && rowDiff === 0) {
+        const step = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < colDiff; i++) {
+            if (gameState.board[fromRow][fromCol + i * step] && gameState.board[fromRow][fromCol + i * step].player !== playerNumber) {
+                return false;
+            }
+        }
+    } else if (rowDiff === colDiff) {
+        const rowStep = (toRow - fromRow) / rowDiff;
+        const colStep = (toCol - fromCol) / colDiff;
+        for (let i = 1; i < rowDiff; i++) {
+            if (gameState.board[fromRow + i * rowStep][fromCol + i * colStep] && gameState.board[fromRow + i * rowStep][fromCol + i * colStep].player !== playerNumber) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function getPlayerNumber(socketId) {
