@@ -17,7 +17,7 @@ let gameState = {
     eliminatedPlayers: [],
     turnOrder: [],
     monsterPlacedThisTurn: false,
-    movedMonsters: {},
+    movedMonsters: new Set(),
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -58,36 +58,34 @@ io.on('connection', (socket) => {
     });
 
     socket.on('moveMonster', (data) => {
-        const { from, to, playerNumber } = data;
-        const { row: fromRow, col: fromCol } = from;
-        const { row: toRow, col: toCol } = to;
+        const { startRow, startCol, endRow, endCol, playerNumber } = data;
 
-        if (gameState.board[fromRow] && gameState.board[fromRow][fromCol]) {
-            const movingMonster = gameState.board[fromRow][fromCol];
+        if (gameState.board[startRow] && gameState.board[startRow][startCol]) {
+            const movingMonster = gameState.board[startRow][startCol];
 
             if (
                 gameState.turnOrder[gameState.currentPlayer] === playerNumber &&
-                isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) &&
+                isValidMove(startRow, startCol, endRow, endCol) &&
                 movingMonster.roundPlaced < gameState.rounds &&
-                (!gameState.movedMonsters[playerNumber] || !gameState.movedMonsters[playerNumber][movingMonster.roundPlaced])
+                !gameState.movedMonsters.has(movingMonster)
             ) {
-                gameState.board[toRow][toCol] = { ...movingMonster };
-                gameState.board[fromRow][fromCol] = null;
-
-                // Mark the monster as moved this turn
-                if (!gameState.movedMonsters[playerNumber]) {
-                    gameState.movedMonsters[playerNumber] = {};
+                const targetCell = gameState.board[endRow][endCol];
+                if (targetCell) {
+                    if (targetCell.player === movingMonster.player) return;
+                    resolveConflict(movingMonster, targetCell, startRow, startCol, endRow, endCol);
+                } else {
+                    gameState.board[startRow][startCol] = null;
+                    gameState.board[endRow][endCol] = movingMonster;
                 }
-                gameState.movedMonsters[playerNumber][movingMonster.roundPlaced] = true;
 
-                handleConflicts(toRow, toCol);
-                console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+                gameState.movedMonsters.add(movingMonster);
+                console.log(`Player ${movingMonster.player} moved a monster from (${startRow}, ${startCol}) to (${endRow}, ${endCol})`);
                 updateGameState();
             } else {
-                console.log(`Invalid move by Player ${movingMonster.player} from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+                console.log(`Invalid move by Player ${movingMonster.player} from (${startRow}, ${startCol}) to (${endRow}, ${endCol})`);
             }
         } else {
-            console.log(`Invalid move attempt from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+            console.log(`Invalid move attempt from (${startRow}, ${startCol}) to (${endRow}, ${endCol})`);
         }
     });
 
@@ -110,7 +108,7 @@ function startNewRound() {
     gameState.rounds++;
     gameState.turnCounter = 0;
     gameState.monsterPlacedThisTurn = false;
-    gameState.movedMonsters = {};
+    gameState.movedMonsters.clear();
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -134,7 +132,7 @@ function determineTurnOrder() {
 function endTurn() {
     gameState.turnCounter++;
     gameState.monsterPlacedThisTurn = false;
-    gameState.movedMonsters = {};
+    gameState.movedMonsters.clear();
 
     if (gameState.currentPlayer < gameState.turnOrder.length - 1) {
         gameState.currentPlayer++;
@@ -184,9 +182,9 @@ function isValidPlacement(playerNumber, row, col) {
     return false;
 }
 
-function isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) {
+function isValidMove(fromRow, fromCol, toRow, toCol) {
     const movingMonster = gameState.board[fromRow][fromCol];
-    if (!movingMonster || movingMonster.player !== playerNumber) return false;
+    if (!movingMonster) return false;
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
 
     const rowDiff = Math.abs(toRow - fromRow);
