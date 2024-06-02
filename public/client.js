@@ -78,7 +78,7 @@ function initializeBoard() {
                 } else if (!gameState.monsterMovedThisTurn) {
                     const fromRow = prompt("Enter row of the monster to move:");
                     const fromCol = prompt("Enter col of the monster to move:");
-                    if (gameState.board[fromRow][fromCol] && gameState.board[fromRow][fromCol].turnPlaced < gameState.turnCounter) {
+                    if (gameState.board[fromRow][fromCol] && (gameState.board[fromRow][fromCol].roundPlaced < gameState.rounds || (gameState.board[fromRow][fromCol].roundPlaced === gameState.rounds && gameState.board[fromRow][fromCol].turnPlaced < gameState.turnCounter))) {
                         socket.emit('moveMonster', { from: { fromRow, fromCol }, to: { row, col } });
                     } else {
                         alert("You cannot move a monster placed this turn.");

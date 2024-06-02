@@ -16,8 +16,8 @@ let gameState = {
     turnCounter: 0,
     eliminatedPlayers: [],
     turnOrder: [],
-    monsterPlacedThisTurn: false, // Track if a monster has been placed this turn
-    monsterMovedThisTurn: false, // Track if a monster has been moved this turn
+    monsterPlacedThisTurn: false,
+    monsterMovedThisTurn: false,
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -44,9 +44,9 @@ io.on('connection', (socket) => {
 
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber && !gameState.monsterPlacedThisTurn) {
             if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-                gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true, turnPlaced: gameState.turnCounter };
+                gameState.board[row][col] = { type: monsterType, player: playerNumber, roundPlaced: gameState.rounds, turnPlaced: gameState.turnCounter };
                 players[playerNumber - 1].monsters++;
-                gameState.monsterPlacedThisTurn = true; // Mark that a monster has been placed this turn
+                gameState.monsterPlacedThisTurn = true;
                 console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
                 updateGameState();
             } else {
@@ -65,10 +65,10 @@ io.on('connection', (socket) => {
         const movingMonster = gameState.board[fromRow][fromCol];
 
         if (gameState.turnOrder[gameState.currentPlayer] === movingMonster.player && !gameState.monsterMovedThisTurn) {
-            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && movingMonster.turnPlaced < gameState.turnCounter) {
-                gameState.board[toRow][toCol] = { ...movingMonster, placedThisTurn: false };
+            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && (movingMonster.roundPlaced < gameState.rounds || (movingMonster.roundPlaced === gameState.rounds && movingMonster.turnPlaced < gameState.turnCounter))) {
+                gameState.board[toRow][toCol] = { ...movingMonster, roundPlaced: movingMonster.roundPlaced, turnPlaced: movingMonster.turnPlaced };
                 gameState.board[fromRow][fromCol] = null;
-                gameState.monsterMovedThisTurn = true; // Mark that a monster has been moved this turn
+                gameState.monsterMovedThisTurn = true;
                 handleConflicts(toRow, toCol);
                 console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
                 updateGameState();
@@ -97,9 +97,9 @@ io.on('connection', (socket) => {
 
 function startNewRound() {
     gameState.rounds++;
-    gameState.turnCounter = 0; // Reset turn counter at the start of a new round
-    gameState.monsterPlacedThisTurn = false; // Reset monster placement flag
-    gameState.monsterMovedThisTurn = false; // Reset monster moved flag
+    gameState.turnCounter = 0;
+    gameState.monsterPlacedThisTurn = false;
+    gameState.monsterMovedThisTurn = false;
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -121,9 +121,9 @@ function determineTurnOrder() {
 }
 
 function endTurn() {
-    gameState.turnCounter++; // Increment turn counter whenever a turn ends
-    gameState.monsterPlacedThisTurn = false; // Reset monster placement flag for the new turn
-    gameState.monsterMovedThisTurn = false; // Reset monster moved flag for the new turn
+    gameState.turnCounter++;
+    gameState.monsterPlacedThisTurn = false;
+    gameState.monsterMovedThisTurn = false;
     for (let i = 0; i < 10; i++) {
         for (let j = 0; j < 10; j++) {
             const monster = gameState.board[i][j];
