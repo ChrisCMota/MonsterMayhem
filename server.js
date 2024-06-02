@@ -48,7 +48,7 @@ io.on('connection', (socket) => {
                 if (gameState.board[row][col] === null) {
                     gameState.board[row][col] = newMonster;
                 } else {
-                    resolveConflict(newMonster, gameState.board[row][col], row, col);
+                    gameState.board[row][col] = resolveConflict(newMonster, gameState.board[row][col]);
                 }
                 players[playerNumber - 1].monsters++;
                 gameState.monsterPlacedThisTurn = true;
@@ -76,8 +76,7 @@ io.on('connection', (socket) => {
             ) {
                 const targetCell = gameState.board[endRow][endCol];
                 if (targetCell) {
-                    const winnerMonster = resolveConflict(movingMonster, targetCell, endRow, endCol);
-                    gameState.board[endRow][endCol] = winnerMonster;
+                    gameState.board[endRow][endCol] = resolveConflict(movingMonster, targetCell);
                 } else {
                     gameState.board[endRow][endCol] = movingMonster;
                 }
@@ -151,7 +150,7 @@ function updateGameState() {
     io.emit('updateGameState', gameState);
 }
 
-function resolveConflict(movingMonster, targetMonster, row, col) {
+function resolveConflict(movingMonster, targetMonster) {
     const outcomes = {
         'V': { 'W': 'removeTarget', 'G': 'removeMoving' },
         'W': { 'G': 'removeTarget', 'V': 'removeMoving' },
@@ -159,22 +158,21 @@ function resolveConflict(movingMonster, targetMonster, row, col) {
     };
     const outcome = outcomes[movingMonster.type][targetMonster.type];
     if (outcome === 'removeTarget') {
-        removeMonster(row, col, targetMonster);
+        removeMonster(targetMonster);
         return movingMonster;
     } else if (outcome === 'removeMoving') {
-        removeMonster(row, col, movingMonster);
+        removeMonster(movingMonster);
         return targetMonster;
     } else {
-        removeMonster(row, col, movingMonster);
-        removeMonster(row, col, targetMonster);
+        removeMonster(movingMonster);
+        removeMonster(targetMonster);
         return null;
     }
 }
 
-function removeMonster(row, col, monster) {
+function removeMonster(monster) {
     const playerIndex = monster.player - 1;
     players[playerIndex].monsters--;
-    gameState.board[row][col] = null;
     checkElimination(monster.player);
 }
 

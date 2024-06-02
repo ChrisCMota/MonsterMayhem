@@ -77,7 +77,7 @@ function handleCellClick(event) {
         highlightSelectedMonster(row, col);
     } else if (selectedMonster) {
         // Move selected monster
-        if (gameState.board[row][col] === null && isValidMove(selectedMonster.row, selectedMonster.col, row, col)) {
+        if (isValidMove(selectedMonster.row, selectedMonster.col, row, col)) {
             console.log('Moving monster to new position:', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col });
             socket.emit('moveMonster', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col, playerNumber });
             selectedMonster = null;
