@@ -183,11 +183,13 @@ function removeMonster(monster) {
 function eliminatePlayer(playerNumber) {
     gameState.eliminatedPlayers.push(playerNumber);
     console.log(`Player ${playerNumber} has been eliminated.`);
+    checkElimination();
 }
 
 function checkElimination() {
-    if (gameState.eliminatedPlayers.length === players.length - 1) {
-        const winner = gameState.turnOrder.find(player => !gameState.eliminatedPlayers.includes(player));
+    const activePlayers = players.filter(player => !gameState.eliminatedPlayers.includes(player.number));
+    if (activePlayers.length === 1) {
+        const winner = activePlayers[0].number;
         io.emit('gameOver', winner);
     }
 }
