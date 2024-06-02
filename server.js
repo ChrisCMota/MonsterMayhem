@@ -28,7 +28,7 @@ io.on('connection', (socket) => {
 
     if (players.length < 4) {
         const playerNumber = players.length + 1;
-        players.push({ id: socket.id, number: playerNumber, monsters: 0, wins: 0, losses: 0, color: playerColors[playerNumber - 1] });
+        players.push({ id: socket.id, number: playerNumber, monsters: 0, wins: 0, losses: 0, lostMonsters: 0, color: playerColors[playerNumber - 1] });
         socket.emit('playerNumber', playerNumber);
         console.log(`Player ${playerNumber} connected`);
     }
@@ -147,7 +147,7 @@ function endTurn() {
 
 function updateGameState() {
     console.log('Updating game state:', gameState);
-    io.emit('updateGameState', gameState);
+    io.emit('updateGameState', { ...gameState, players });
 }
 
 function resolveConflict(movingMonster, targetMonster) {
@@ -173,15 +173,22 @@ function resolveConflict(movingMonster, targetMonster) {
 function removeMonster(monster) {
     const playerIndex = monster.player - 1;
     players[playerIndex].monsters--;
-    checkElimination(monster.player);
+    players[playerIndex].lostMonsters++;
+    if (players[playerIndex].lostMonsters >= 10) {
+        eliminatePlayer(monster.player);
+    }
+    checkElimination();
 }
 
-function checkElimination(playerNumber) {
-    if (players[playerNumber - 1].monsters >= 10) {
-        gameState.eliminatedPlayers.push(playerNumber);
-        if (gameState.eliminatedPlayers.length === players.length - 1) {
-            io.emit('gameOver', gameState.turnOrder.filter(player => !gameState.eliminatedPlayers.includes(player))[0]);
-        }
+function eliminatePlayer(playerNumber) {
+    gameState.eliminatedPlayers.push(playerNumber);
+    console.log(`Player ${playerNumber} has been eliminated.`);
+}
+
+function checkElimination() {
+    if (gameState.eliminatedPlayers.length === players.length - 1) {
+        const winner = gameState.turnOrder.find(player => !gameState.eliminatedPlayers.includes(player));
+        io.emit('gameOver', winner);
     }
 }
 

@@ -19,6 +19,7 @@ socket.on('updateGameState', (state) => {
     gameState = state;
     updateBoard(state.board);
     updateTurnInfo(state);
+    updateStats(state.players);
 });
 
 socket.on('gameOver', (winner) => {
@@ -129,6 +130,7 @@ function updateStats(players) {
     statsElement.innerHTML = players.map(player => `
         Player ${player.number}: 
         Monsters: ${player.monsters} 
+        Lost Monsters: ${player.lostMonsters} 
         Wins: ${player.wins} 
         Losses: ${player.losses}
     `).join('<br>');
