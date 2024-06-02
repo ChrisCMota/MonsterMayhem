@@ -7,27 +7,68 @@ body {
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(10, 40px);
+    grid-template-columns: auto repeat(10, 40px);
     grid-gap: 5px;
     margin: auto;
+    margin-top: 20px;
+}
+
+.row-label-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-right: 5px;
+}
+
+.row-label {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+}
+
+.col-label {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .grid-item {
     width: 40px;
     height: 40px;
-    background-color: orange;
-    border: 1px solid white;
+    border: 2px solid transparent; /* Default border */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
-    color: white;
+    background-size: cover;
+    background-position: center;
 }
 
-.grid-item.player-1 { color: blue; }
-.grid-item.player-2 { color: red; }
-.grid-item.player-3 { color: green; }
-.grid-item.player-4 { color: yellow; }
+.grid-item.player-1 { border-color: blue; }
+.grid-item.player-2 { border-color: red; }
+.grid-item.player-3 { border-color: green; }
+.grid-item.player-4 { border-color: yellow; }
+
+.grid-item.vampire {
+    background-image: url('/images/vampire.jpg');
+}
+
+.grid-item.ghost {
+    background-image: url('/images/ghost.jpg');
+}
+
+.grid-item.werewolf {
+    background-image: url('/images/werewolf.jpg');
+}
 
 #monster-type {
     margin: 10px 0;

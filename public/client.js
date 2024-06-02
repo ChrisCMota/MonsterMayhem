@@ -27,14 +27,34 @@ socket.on('gameOver', (winner) => {
 function initializeBoard() {
     const boardElement = document.getElementById('board');
     boardElement.innerHTML = '';
+    
+    const rowLabelContainer = document.createElement('div');
+    rowLabelContainer.className = 'row-label-container';
     for (let i = 0; i < 10; i++) {
+        const rowLabel = document.createElement('div');
+        rowLabel.className = 'row-label';
+        rowLabel.textContent = i;
+        rowLabelContainer.appendChild(rowLabel);
+    }
+    boardElement.appendChild(rowLabelContainer);
+
+    for (let i = 0; i < 10; i++) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        
+        const colLabel = document.createElement('div');
+        colLabel.className = 'col-label';
+        colLabel.textContent = i;
+        row.appendChild(colLabel);
+        
         for (let j = 0; j < 10; j++) {
             const cell = document.createElement('div');
             cell.classList.add('grid-item');
             cell.dataset.row = i;
             cell.dataset.col = j;
-            boardElement.appendChild(cell);
+            row.appendChild(cell);
         }
+        boardElement.appendChild(row);
     }
 
     boardElement.addEventListener('click', (e) => {
@@ -75,14 +95,21 @@ function updateBoard(board) {
             const cell = boardElement.querySelector(`[data-row="${i}"][data-col="${j}"]`);
             const cellContent = board[i][j];
             if (cellContent) {
-                cell.textContent = cellContent.type;
                 cell.className = 'grid-item';
                 cell.classList.add(`player-${cellContent.player}`);
+                cell.classList.add(getMonsterClass(cellContent.type));
             } else {
-                cell.textContent = '';
                 cell.className = 'grid-item';
             }
         }
+    }
+}
+
+function getMonsterClass(type) {
+    switch (type) {
+        case 'V': return 'vampire';
+        case 'W': return 'werewolf';
+        case 'G': return 'ghost';
     }
 }
 
