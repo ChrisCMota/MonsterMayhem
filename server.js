@@ -40,10 +40,9 @@ io.on('connection', (socket) => {
         const { row, col } = position;
 
         if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-            gameState.board[row][col] = { type: monsterType, player: playerNumber };
+            gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true };
             players[playerNumber - 1].monsters++;
             console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
-            endTurn();
             updateGameState();
         } else {
             console.log(`Invalid placement by Player ${playerNumber} at (${row}, ${col})`);
@@ -57,8 +56,8 @@ io.on('connection', (socket) => {
 
         const movingMonster = gameState.board[fromRow][fromCol];
 
-        if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol)) {
-            gameState.board[toRow][toCol] = movingMonster;
+        if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && !movingMonster.placedThisTurn) {
+            gameState.board[toRow][toCol] = { ...movingMonster, placedThisTurn: false };
             gameState.board[fromRow][fromCol] = null;
             handleConflicts(toRow, toCol);
             console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
@@ -69,8 +68,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('endTurn', () => {
-        endTurn();
-        updateGameState();
+        const currentPlayer = gameState.turnOrder[gameState.currentPlayer];
+        if (currentPlayer === getPlayerNumber(socket.id)) {
+            endTurn();
+            updateGameState();
+        }
     });
 
     socket.on('disconnect', () => {
@@ -103,6 +105,15 @@ function determineTurnOrder() {
 }
 
 function endTurn() {
+    for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 10; j++) {
+            const monster = gameState.board[i][j];
+            if (monster) {
+                monster.placedThisTurn = false;
+            }
+        }
+    }
+
     if (gameState.currentPlayer < gameState.turnOrder.length - 1) {
         gameState.currentPlayer++;
     } else {
@@ -185,6 +196,11 @@ function isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) {
     if (rowDiff === 0 || colDiff === 0) return true;
 
     return false;
+}
+
+function getPlayerNumber(socketId) {
+    const player = players.find(player => player.id === socketId);
+    return player ? player.number : null;
 }
 
 server.listen(3000, () => {

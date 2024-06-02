@@ -72,14 +72,22 @@ function initializeBoard() {
                 } else {
                     const fromRow = prompt("Enter row of the monster to move:");
                     const fromCol = prompt("Enter col of the monster to move:");
-                    socket.emit('moveMonster', { from: { fromRow, fromCol }, to: { row, col } });
+                    if (gameState.board[fromRow][fromCol] && !gameState.board[fromRow][fromCol].placedThisTurn) {
+                        socket.emit('moveMonster', { from: { fromRow, fromCol }, to: { row, col } });
+                    } else {
+                        alert("You cannot move a monster placed this turn.");
+                    }
                 }
             }
         }
     });
 
     document.getElementById('end-turn').addEventListener('click', () => {
-        socket.emit('endTurn');
+        if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
+            socket.emit('endTurn');
+        } else {
+            alert("It's not your turn.");
+        }
     });
 }
 
