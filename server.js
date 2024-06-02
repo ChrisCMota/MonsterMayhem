@@ -13,6 +13,7 @@ let gameState = {
     board: Array(10).fill(null).map(() => Array(10).fill(null)),
     currentPlayer: 0,
     rounds: 0,
+    turnCounter: 0,
     eliminatedPlayers: [],
     turnOrder: [],
 };
@@ -84,6 +85,7 @@ io.on('connection', (socket) => {
 
 function startNewRound() {
     gameState.rounds++;
+    gameState.turnCounter = 0; // Reset turn counter at the start of a new round
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -105,6 +107,7 @@ function determineTurnOrder() {
 }
 
 function endTurn() {
+    gameState.turnCounter++; // Increment turn counter whenever a turn ends
     for (let i = 0; i < 10; i++) {
         for (let j = 0; j < 10; j++) {
             const monster = gameState.board[i][j];

@@ -128,7 +128,7 @@ function updateStats(players) {
 
 function updateTurnInfo(state) {
     const turnInfo = document.getElementById('turn-info');
-    turnInfo.textContent = `Player ${state.turnOrder[state.currentPlayer]}'s turn`;
+    turnInfo.textContent = `Player ${state.turnOrder[state.currentPlayer]}'s turn (Turn ${state.turnCounter})`;
 }
 
 function isValidPlacement(playerNumber, row, col) {
