@@ -42,8 +42,11 @@ io.on('connection', (socket) => {
         if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
             gameState.board[row][col] = { type: monsterType, player: playerNumber };
             players[playerNumber - 1].monsters++;
+            console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
             endTurn();
             updateGameState();
+        } else {
+            console.log(`Invalid placement by Player ${playerNumber} at (${row}, ${col})`);
         }
     });
 
@@ -51,20 +54,23 @@ io.on('connection', (socket) => {
         const { from, to } = data;
         const { fromRow, fromCol } = from;
         const { toRow, toCol } = to;
-        
+
         const movingMonster = gameState.board[fromRow][fromCol];
-        
+
         if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol)) {
             gameState.board[toRow][toCol] = movingMonster;
             gameState.board[fromRow][fromCol] = null;
             handleConflicts(toRow, toCol);
-            endTurn();
+            console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
             updateGameState();
+        } else {
+            console.log(`Invalid move by Player ${movingMonster.player} from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
         }
     });
 
     socket.on('endTurn', () => {
         endTurn();
+        updateGameState();
     });
 
     socket.on('disconnect', () => {
@@ -76,7 +82,11 @@ io.on('connection', (socket) => {
 
 function startNewRound() {
     gameState.rounds++;
-    gameState.turnOrder = determineTurnOrder();
+    if (gameState.rounds === 1) {
+        gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
+    } else {
+        gameState.turnOrder = determineTurnOrder();
+    }
     gameState.currentPlayer = 0;
     updateGameState();
 }
@@ -101,6 +111,7 @@ function endTurn() {
 }
 
 function updateGameState() {
+    console.log('Updating game state:', gameState);
     io.emit('updateGameState', gameState);
 }
 

@@ -39,16 +39,18 @@ function initializeBoard() {
 
     boardElement.addEventListener('click', (e) => {
         if (e.target.classList.contains('grid-item') && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
-            const row = e.target.dataset.row;
-            const col = e.target.dataset.col;
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            const monsterType = document.getElementById('monster-type').value;
+
             if (gameState.rounds === 1) {
-                const monsterType = document.getElementById('monster-type').value;
-                if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
-                    socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
+                    if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
+                        socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                    }
                 }
             } else {
                 if (gameState.board[row][col] === null) {
-                    const monsterType = document.getElementById('monster-type').value;
                     if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                         socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
                     }
@@ -97,4 +99,12 @@ function updateStats(players) {
 function updateTurnInfo(state) {
     const turnInfo = document.getElementById('turn-info');
     turnInfo.textContent = `Player ${state.turnOrder[state.currentPlayer]}'s turn`;
+}
+
+function isValidPlacement(playerNumber, row, col) {
+    if (playerNumber === 1 && col === 0) return true;
+    if (playerNumber === 2 && col === 9) return true;
+    if (playerNumber === 3 && row === 0) return true;
+    if (playerNumber === 4 && row === 9) return true;
+    return false;
 }
