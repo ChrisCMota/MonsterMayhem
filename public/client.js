@@ -4,16 +4,19 @@ let playerNumber;
 let gameState;
 let selectedMonster = null;
 
+// Handle the event when the server sends the player's number
 socket.on('playerNumber', (number) => {
     playerNumber = number;
     document.getElementById('player-number').textContent = `You are Player ${number}`;
 });
 
+// Handle the event when the server sends the start game signal
 socket.on('startGame', (players) => {
     initializeBoard();
     updateStats(players);
 });
 
+// Handle the event when the server sends an updated game state
 socket.on('updateGameState', (state) => {
     console.log('Received game state:', state);
     gameState = state;
@@ -22,15 +25,18 @@ socket.on('updateGameState', (state) => {
     updateStats(state.players);
 });
 
+// Handle the event when the game is over and announce the winner
 socket.on('gameOver', (winner) => {
     alert(`Player ${winner} wins the game!`);
 });
 
+// Initialize the game board
 function initializeBoard() {
     const boardElement = document.getElementById('board');
     boardElement.innerHTML = '';
 
-    boardElement.appendChild(document.createElement('div'));
+    // Add top row labels
+    boardElement.appendChild(document.createElement('div')); // Empty corner for alignment
     for (let j = 0; j < 10; j++) {
         const label = document.createElement('div');
         label.className = 'grid-label';
@@ -38,6 +44,7 @@ function initializeBoard() {
         boardElement.appendChild(label);
     }
 
+    // Add row labels and cells
     for (let i = 0; i < 10; i++) {
         const label = document.createElement('div');
         label.className = 'grid-label';
@@ -54,6 +61,7 @@ function initializeBoard() {
         }
     }
 
+    // Add end turn button event listener
     document.getElementById('end-turn').addEventListener('click', () => {
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
             console.log('Ending turn for player:', playerNumber);
@@ -66,6 +74,7 @@ function initializeBoard() {
     });
 }
 
+// Handle cell click events for selecting and moving monsters
 function handleCellClick(event) {
     const cell = event.target;
     const row = parseInt(cell.dataset.row);
@@ -100,6 +109,7 @@ function handleCellClick(event) {
     }
 }
 
+// Update the game board based on the game state
 function updateBoard(board) {
     const boardElement = document.getElementById('board');
     for (let i = 0; i < 10; i++) {
@@ -117,6 +127,7 @@ function updateBoard(board) {
     }
 }
 
+// Get the CSS class for a monster type
 function getMonsterClass(type) {
     switch (type) {
         case 'V': return 'vampire';
@@ -125,6 +136,7 @@ function getMonsterClass(type) {
     }
 }
 
+// Update the player statistics display
 function updateStats(players) {
     const statsElement = document.getElementById('game-stats');
     statsElement.innerHTML = players.map(player => `
@@ -136,11 +148,13 @@ function updateStats(players) {
     `).join('<br>');
 }
 
+// Update the turn information display
 function updateTurnInfo(state) {
     const turnInfo = document.getElementById('turn-info');
     turnInfo.textContent = `Round ${state.rounds} - Player ${state.turnOrder[state.currentPlayer]}'s turn (Turn ${state.turnCounter})`;
 }
 
+// Validate if a placement is valid for a player
 function isValidPlacement(playerNumber, row, col) {
     if (playerNumber === 1 && col === 0) return true;
     if (playerNumber === 2 && col === 9) return true;
@@ -149,6 +163,7 @@ function isValidPlacement(playerNumber, row, col) {
     return false;
 }
 
+// Validate if a move is valid for a player
 function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
     const rowDiff = Math.abs(toRow - fromRow);
@@ -160,6 +175,7 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     return false;
 }
 
+// Highlight the selected monster's cell
 function highlightSelectedMonster(row, col) {
     clearHighlights();
     const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
@@ -168,6 +184,7 @@ function highlightSelectedMonster(row, col) {
     }
 }
 
+// Clear all cell highlights
 function clearHighlights() {
     const cells = document.querySelectorAll('.selected');
     cells.forEach(cell => cell.classList.remove('selected'));
