@@ -29,35 +29,27 @@ function initializeBoard() {
     boardElement.innerHTML = '';
 
     // Add top row labels
-    const topRow = document.createElement('div');
-    topRow.className = 'grid-row';
-    topRow.appendChild(document.createElement('div')); // Empty corner for alignment
+    boardElement.appendChild(document.createElement('div')); // Empty corner for alignment
     for (let j = 0; j < 10; j++) {
         const label = document.createElement('div');
         label.className = 'grid-label';
         label.textContent = j;
-        topRow.appendChild(label);
+        boardElement.appendChild(label);
     }
-    boardElement.appendChild(topRow);
 
     for (let i = 0; i < 10; i++) {
-        const row = document.createElement('div');
-        row.className = 'grid-row';
-
-        // Add row label
         const label = document.createElement('div');
         label.className = 'grid-label';
         label.textContent = i;
-        row.appendChild(label);
+        boardElement.appendChild(label);
 
         for (let j = 0; j < 10; j++) {
             const cell = document.createElement('div');
             cell.classList.add('grid-item');
             cell.dataset.row = i;
             cell.dataset.col = j;
-            row.appendChild(cell);
+            boardElement.appendChild(cell);
         }
-        boardElement.appendChild(row);
     }
 
     boardElement.addEventListener('click', (e) => {
