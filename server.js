@@ -72,7 +72,7 @@ function startNewRound() {
     gameState.rounds++;
     gameState.turnOrder = determineTurnOrder();
     gameState.currentPlayer = 0;
-    io.emit('updateGameState', gameState);
+    updateGameState();
 }
 
 function determineTurnOrder() {
