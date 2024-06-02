@@ -16,6 +16,7 @@ let gameState = {
     turnCounter: 0,
     eliminatedPlayers: [],
     turnOrder: [],
+    monsterPlacedThisTurn: false, // Track if a monster has been placed this turn
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -40,13 +41,18 @@ io.on('connection', (socket) => {
         const { playerNumber, monsterType, position } = data;
         const { row, col } = position;
 
-        if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-            gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true };
-            players[playerNumber - 1].monsters++;
-            console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
-            updateGameState();
+        if (gameState.turnOrder[gameState.currentPlayer] === playerNumber && !gameState.monsterPlacedThisTurn) {
+            if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
+                gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true };
+                players[playerNumber - 1].monsters++;
+                gameState.monsterPlacedThisTurn = true; // Mark that a monster has been placed this turn
+                console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
+                updateGameState();
+            } else {
+                console.log(`Invalid placement by Player ${playerNumber} at (${row}, ${col})`);
+            }
         } else {
-            console.log(`Invalid placement by Player ${playerNumber} at (${row}, ${col})`);
+            console.log(`Player ${playerNumber} is not allowed to place a monster now.`);
         }
     });
 
@@ -86,6 +92,7 @@ io.on('connection', (socket) => {
 function startNewRound() {
     gameState.rounds++;
     gameState.turnCounter = 0; // Reset turn counter at the start of a new round
+    gameState.monsterPlacedThisTurn = false; // Reset monster placement flag
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -108,6 +115,7 @@ function determineTurnOrder() {
 
 function endTurn() {
     gameState.turnCounter++; // Increment turn counter whenever a turn ends
+    gameState.monsterPlacedThisTurn = false; // Reset monster placement flag for the new turn
     for (let i = 0; i < 10; i++) {
         for (let j = 0; j < 10; j++) {
             const monster = gameState.board[i][j];
