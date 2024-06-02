@@ -200,32 +200,7 @@ function isValidMove(fromRow, fromCol, toRow, toCol, playerNumber) {
     if (rowDiff === colDiff && rowDiff <= 2) return true;
     if (rowDiff === 0 || colDiff === 0) return true;
 
-    // Check if path is clear (no other player's monsters in the way)
-    if (rowDiff > 0 && colDiff === 0) {
-        const step = (toRow - fromRow) / rowDiff;
-        for (let i = 1; i < rowDiff; i++) {
-            if (gameState.board[fromRow + i * step][fromCol] && gameState.board[fromRow + i * step][fromCol].player !== playerNumber) {
-                return false;
-            }
-        }
-    } else if (colDiff > 0 && rowDiff === 0) {
-        const step = (toCol - fromCol) / colDiff;
-        for (let i = 1; i < colDiff; i++) {
-            if (gameState.board[fromRow][fromCol + i * step] && gameState.board[fromRow][fromCol + i * step].player !== playerNumber) {
-                return false;
-            }
-        }
-    } else if (rowDiff === colDiff) {
-        const rowStep = (toRow - fromRow) / rowDiff;
-        const colStep = (toCol - fromCol) / colDiff;
-        for (let i = 1; i < rowDiff; i++) {
-            if (gameState.board[fromRow + i * rowStep][fromCol + i * colStep] && gameState.board[fromRow + i * rowStep][fromCol + i * colStep].player !== playerNumber) {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return false;
 }
 
 function getPlayerNumber(socketId) {

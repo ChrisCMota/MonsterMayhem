@@ -3,7 +3,6 @@ const socket = io();
 let playerNumber;
 let gameState;
 let selectedMonster = null;
-let movePhase = false;
 
 socket.on('playerNumber', (number) => {
     playerNumber = number;
@@ -50,10 +49,6 @@ function initializeBoard() {
             cell.dataset.row = i;
             cell.dataset.col = j;
             cell.addEventListener('click', handleCellClick);
-            cell.setAttribute('draggable', true);
-            cell.addEventListener('dragstart', handleDragStart);
-            cell.addEventListener('dragover', handleDragOver);
-            cell.addEventListener('drop', handleDrop);
             boardElement.appendChild(cell);
         }
     }
@@ -64,7 +59,6 @@ function initializeBoard() {
             socket.emit('endTurn');
             selectedMonster = null;
             clearHighlights();
-            movePhase = false;
         } else {
             console.log("It's not your turn.");
         }
@@ -77,56 +71,31 @@ function handleCellClick(event) {
     const col = parseInt(cell.dataset.col);
     const cellContent = gameState.board[row][col];
 
-    if (!movePhase) {
+    if (!selectedMonster && cellContent && cellContent.player === playerNumber) {
+        // Select monster
+        selectedMonster = { row, col, monster: cellContent };
+        highlightSelectedMonster(row, col);
+    } else if (selectedMonster) {
+        // Move selected monster
+        if (gameState.board[row][col] === null && isValidMove(selectedMonster.row, selectedMonster.col, row, col)) {
+            console.log('Moving monster to new position:', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col });
+            socket.emit('moveMonster', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col, playerNumber });
+            selectedMonster = null;
+            clearHighlights();
+        } else {
+            console.log("Invalid move. Please try again.");
+        }
+    } else if (!cellContent && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
+        // Place monster
         const monsterType = document.getElementById('monster-type').value;
         if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
             if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                 console.log('Placing new monster:', { playerNumber, monsterType, position: { row, col } });
                 socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
-                movePhase = true;
             }
         } else {
             console.log("Invalid placement. You can only place one monster per turn.");
         }
-    }
-}
-
-function handleDragStart(event) {
-    const cell = event.target;
-    const row = parseInt(cell.dataset.row);
-    const col = parseInt(cell.dataset.col);
-    const cellContent = gameState.board[row][col];
-
-    if (cellContent && cellContent.player === playerNumber && cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
-        selectedMonster = { row, col, monster: cellContent };
-        event.dataTransfer.setData('text/plain', JSON.stringify(selectedMonster));
-        event.dataTransfer.effectAllowed = 'move';
-    } else {
-        event.preventDefault();
-    }
-}
-
-function handleDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-}
-
-function handleDrop(event) {
-    event.preventDefault();
-    const cell = event.target;
-    const row = parseInt(cell.dataset.row);
-    const col = parseInt(cell.dataset.col);
-
-    const data = event.dataTransfer.getData('text/plain');
-    const draggedMonster = JSON.parse(data);
-
-    if (gameState.board[row][col] === null && isValidMove(draggedMonster.row, draggedMonster.col, row, col)) {
-        console.log('Moving monster to new position:', { startRow: draggedMonster.row, startCol: draggedMonster.col, endRow: row, endCol: col });
-        socket.emit('moveMonster', { startRow: draggedMonster.row, startCol: draggedMonster.col, endRow: row, endCol: col, playerNumber });
-        selectedMonster = null;
-        clearHighlights();
-    } else {
-        console.log("Invalid move. Please try again.");
     }
 }
 
@@ -140,10 +109,8 @@ function updateBoard(board) {
                 cell.className = 'grid-item';
                 cell.classList.add(`player-${cellContent.player}`);
                 cell.classList.add(getMonsterClass(cellContent.type));
-                cell.setAttribute('draggable', true);
             } else {
                 cell.className = 'grid-item';
-                cell.setAttribute('draggable', false);
             }
         }
     }
@@ -188,32 +155,15 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (rowDiff === colDiff && rowDiff <= 2) return true;
     if (rowDiff === 0 || colDiff === 0) return true;
 
-    // Check if path is clear (no other player's monsters in the way)
-    if (rowDiff > 0 && colDiff === 0) {
-        const step = (toRow - fromRow) / rowDiff;
-        for (let i = 1; i < rowDiff; i++) {
-            if (gameState.board[fromRow + i * step][fromCol] && gameState.board[fromRow + i * step][fromCol].player !== playerNumber) {
-                return false;
-            }
-        }
-    } else if (colDiff > 0 && rowDiff === 0) {
-        const step = (toCol - fromCol) / colDiff;
-        for (let i = 1; i < colDiff; i++) {
-            if (gameState.board[fromRow][fromCol + i * step] && gameState.board[fromRow][fromCol + i * step].player !== playerNumber) {
-                return false;
-            }
-        }
-    } else if (rowDiff === colDiff) {
-        const rowStep = (toRow - fromRow) / rowDiff;
-        const colStep = (toCol - fromCol) / colDiff;
-        for (let i = 1; i < rowDiff; i++) {
-            if (gameState.board[fromRow + i * rowStep][fromCol + i * colStep] && gameState.board[fromRow + i * rowStep][fromCol + i * colStep].player !== playerNumber) {
-                return false;
-            }
-        }
-    }
+    return false;
+}
 
-    return true;
+function highlightSelectedMonster(row, col) {
+    clearHighlights();
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (cell) {
+        cell.classList.add('selected');
+    }
 }
 
 function clearHighlights() {
