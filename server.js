@@ -17,6 +17,7 @@ let gameState = {
     eliminatedPlayers: [],
     turnOrder: [],
     monsterPlacedThisTurn: false, // Track if a monster has been placed this turn
+    monsterMovedThisTurn: false, // Track if a monster has been moved this turn
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -63,14 +64,19 @@ io.on('connection', (socket) => {
 
         const movingMonster = gameState.board[fromRow][fromCol];
 
-        if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && !movingMonster.placedThisTurn) {
-            gameState.board[toRow][toCol] = { ...movingMonster, placedThisTurn: false };
-            gameState.board[fromRow][fromCol] = null;
-            handleConflicts(toRow, toCol);
-            console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
-            updateGameState();
+        if (gameState.turnOrder[gameState.currentPlayer] === movingMonster.player && !gameState.monsterMovedThisTurn) {
+            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && !movingMonster.placedThisTurn) {
+                gameState.board[toRow][toCol] = { ...movingMonster, placedThisTurn: false };
+                gameState.board[fromRow][fromCol] = null;
+                gameState.monsterMovedThisTurn = true; // Mark that a monster has been moved this turn
+                handleConflicts(toRow, toCol);
+                console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+                updateGameState();
+            } else {
+                console.log(`Invalid move by Player ${movingMonster.player} from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+            }
         } else {
-            console.log(`Invalid move by Player ${movingMonster.player} from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
+            console.log(`Player ${movingMonster.player} is not allowed to move a monster now.`);
         }
     });
 
@@ -93,6 +99,7 @@ function startNewRound() {
     gameState.rounds++;
     gameState.turnCounter = 0; // Reset turn counter at the start of a new round
     gameState.monsterPlacedThisTurn = false; // Reset monster placement flag
+    gameState.monsterMovedThisTurn = false; // Reset monster moved flag
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -116,6 +123,7 @@ function determineTurnOrder() {
 function endTurn() {
     gameState.turnCounter++; // Increment turn counter whenever a turn ends
     gameState.monsterPlacedThisTurn = false; // Reset monster placement flag for the new turn
+    gameState.monsterMovedThisTurn = false; // Reset monster moved flag for the new turn
     for (let i = 0; i < 10; i++) {
         for (let j = 0; j < 10; j++) {
             const monster = gameState.board[i][j];
