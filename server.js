@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber && !gameState.monsterPlacedThisTurn) {
             if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-                gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true };
+                gameState.board[row][col] = { type: monsterType, player: playerNumber, placedThisTurn: true, turnPlaced: gameState.turnCounter };
                 players[playerNumber - 1].monsters++;
                 gameState.monsterPlacedThisTurn = true; // Mark that a monster has been placed this turn
                 console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
         const movingMonster = gameState.board[fromRow][fromCol];
 
         if (gameState.turnOrder[gameState.currentPlayer] === movingMonster.player && !gameState.monsterMovedThisTurn) {
-            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && !movingMonster.placedThisTurn) {
+            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && movingMonster.turnPlaced < gameState.turnCounter) {
                 gameState.board[toRow][toCol] = { ...movingMonster, placedThisTurn: false };
                 gameState.board[fromRow][fromCol] = null;
                 gameState.monsterMovedThisTurn = true; // Mark that a monster has been moved this turn
