@@ -145,8 +145,6 @@ function isValidPlacement(playerNumber, row, col) {
 }
 
 function isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) {
-    const movingMonster = gameState.board[fromRow][fromCol];
-    if (!movingMonster || movingMonster.player !== playerNumber) return false;
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
 
     const rowDiff = Math.abs(toRow - fromRow);

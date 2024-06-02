@@ -59,8 +59,8 @@ io.on('connection', (socket) => {
 
     socket.on('moveMonster', (data) => {
         const { from, to, playerNumber } = data;
-        const { fromRow, fromCol } = from;
-        const { toRow, toCol } = to;
+        const { row: fromRow, col: fromCol } = from;
+        const { row: toRow, col: toCol } = to;
 
         if (gameState.board[fromRow] && gameState.board[fromRow][fromCol]) {
             const movingMonster = gameState.board[fromRow][fromCol];
