@@ -3,7 +3,7 @@ const socket = io();
 let playerNumber;
 let gameState;
 let selectedMonster = null;
-let movePhase = false;  // Indicates if the player is in the move phase
+let movePhase = false;
 
 socket.on('playerNumber', (number) => {
     playerNumber = number;
@@ -30,8 +30,7 @@ function initializeBoard() {
     const boardElement = document.getElementById('board');
     boardElement.innerHTML = '';
 
-    // Add top row labels
-    boardElement.appendChild(document.createElement('div')); // Empty corner for alignment
+    boardElement.appendChild(document.createElement('div'));
     for (let j = 0; j < 10; j++) {
         const label = document.createElement('div');
         label.className = 'grid-label';
@@ -50,52 +49,13 @@ function initializeBoard() {
             cell.classList.add('grid-item');
             cell.dataset.row = i;
             cell.dataset.col = j;
+            cell.setAttribute('draggable', true);
+            cell.addEventListener('dragstart', handleDragStart);
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('drop', handleDrop);
             boardElement.appendChild(cell);
         }
     }
-
-    boardElement.addEventListener('click', (e) => {
-        if (e.target.classList.contains('grid-item') && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
-            const row = parseInt(e.target.dataset.row);
-            const col = parseInt(e.target.dataset.col);
-            const cellContent = gameState.board[row][col];
-
-            if (!movePhase) {
-                // Placing monster phase
-                const monsterType = document.getElementById('monster-type').value;
-                if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-                    if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
-                        console.log('Placing new monster:', { playerNumber, monsterType, position: { row, col } });
-                        socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
-                        movePhase = true;  // Switch to move phase after placing a monster
-                    }
-                } else {
-                    console.log("Invalid placement. You can only place one monster per turn.");
-                }
-            } else if (selectedMonster) {
-                // Move selected monster phase
-                if (gameState.board[row][col] === null && isValidMove(selectedMonster.row, selectedMonster.col, row, col)) {
-                    console.log('Moving monster to new position:', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col });
-                    socket.emit('moveMonster', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col, playerNumber });
-                    selectedMonster = null;
-                    clearHighlights();
-                } else {
-                    console.log("Invalid move. Please try again.");
-                }
-            } else if (cellContent && cellContent.player === playerNumber) {
-                // Select a monster for movement
-                if (cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
-                    console.log('Monster selected for movement:', cellContent);
-                    selectedMonster = { row, col, monster: cellContent };
-                    highlightSelectedMonster(row, col);
-                } else {
-                    console.log("You can only move monsters placed in previous rounds.");
-                }
-            }
-        } else {
-            console.log("It's not your turn.");
-        }
-    });
 
     document.getElementById('end-turn').addEventListener('click', () => {
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
@@ -103,11 +63,48 @@ function initializeBoard() {
             socket.emit('endTurn');
             selectedMonster = null;
             clearHighlights();
-            movePhase = false;  // Reset for the next turn
+            movePhase = false;
         } else {
             console.log("It's not your turn.");
         }
     });
+}
+
+function handleDragStart(event) {
+    const cell = event.target;
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+    const cellContent = gameState.board[row][col];
+
+    if (cellContent && cellContent.player === playerNumber && cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
+        selectedMonster = { row, col, monster: cellContent };
+        event.dataTransfer.setData('text/plain', JSON.stringify(selectedMonster));
+    } else {
+        event.preventDefault();
+    }
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    const cell = event.target;
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+
+    const data = event.dataTransfer.getData('text/plain');
+    const draggedMonster = JSON.parse(data);
+
+    if (gameState.board[row][col] === null && isValidMove(draggedMonster.row, draggedMonster.col, row, col)) {
+        console.log('Moving monster to new position:', { startRow: draggedMonster.row, startCol: draggedMonster.col, endRow: row, endCol: col });
+        socket.emit('moveMonster', { startRow: draggedMonster.row, startCol: draggedMonster.col, endRow: row, endCol: col, playerNumber });
+        selectedMonster = null;
+        clearHighlights();
+    } else {
+        console.log("Invalid move. Please try again.");
+    }
 }
 
 function updateBoard(board) {
@@ -120,8 +117,10 @@ function updateBoard(board) {
                 cell.className = 'grid-item';
                 cell.classList.add(`player-${cellContent.player}`);
                 cell.classList.add(getMonsterClass(cellContent.type));
+                cell.setAttribute('draggable', true);
             } else {
                 cell.className = 'grid-item';
+                cell.setAttribute('draggable', false);
             }
         }
     }
@@ -160,22 +159,11 @@ function isValidPlacement(playerNumber, row, col) {
 
 function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
-
     const rowDiff = Math.abs(toRow - fromRow);
     const colDiff = Math.abs(toCol - fromCol);
-
     if (rowDiff === colDiff && rowDiff <= 2) return true;
     if (rowDiff === 0 || colDiff === 0) return true;
-
     return false;
-}
-
-function highlightSelectedMonster(row, col) {
-    clearHighlights();
-    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-    if (cell) {
-        cell.classList.add('selected');
-    }
 }
 
 function clearHighlights() {
