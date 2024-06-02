@@ -14,6 +14,7 @@ socket.on('startGame', (players) => {
 });
 
 socket.on('updateGameState', (state) => {
+    console.log('Received game state:', state);
     gameState = state;
     updateBoard(state.board);
     updateTurnInfo(state);

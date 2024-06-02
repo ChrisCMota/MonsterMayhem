@@ -96,6 +96,7 @@ function endTurn() {
 }
 
 function updateGameState() {
+    console.log('Updating game state:', gameState);
     io.emit('updateGameState', gameState);
 }
 
