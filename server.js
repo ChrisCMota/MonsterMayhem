@@ -13,7 +13,8 @@ let gameState = {
     board: Array(10).fill(null).map(() => Array(10).fill(null)),
     currentPlayer: 0,
     rounds: 0,
-    eliminatedPlayers: []
+    eliminatedPlayers: [],
+    turnOrder: [],
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -30,6 +31,7 @@ io.on('connection', (socket) => {
     }
 
     if (players.length === 4) {
+        startNewRound();
         io.emit('startGame', players);
     }
 
@@ -37,10 +39,10 @@ io.on('connection', (socket) => {
         const { playerNumber, monsterType, position } = data;
         const { row, col } = position;
 
-        if (gameState.board[row][col] === null) {
+        if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
             gameState.board[row][col] = { type: monsterType, player: playerNumber };
             players[playerNumber - 1].monsters++;
-            updateGameState();
+            endTurn();
         }
     });
 
@@ -51,11 +53,11 @@ io.on('connection', (socket) => {
         
         const movingMonster = gameState.board[fromRow][fromCol];
         
-        if (movingMonster) {
+        if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol)) {
             gameState.board[toRow][toCol] = movingMonster;
             gameState.board[fromRow][fromCol] = null;
             handleConflicts(toRow, toCol);
-            updateGameState();
+            endTurn();
         }
     });
 
@@ -65,6 +67,33 @@ io.on('connection', (socket) => {
         io.emit('playerDisconnected', socket.id);
     });
 });
+
+function startNewRound() {
+    gameState.rounds++;
+    gameState.turnOrder = determineTurnOrder();
+    gameState.currentPlayer = 0;
+    io.emit('updateGameState', gameState);
+}
+
+function determineTurnOrder() {
+    const activePlayers = players.filter(player => !gameState.eliminatedPlayers.includes(player.number));
+    activePlayers.sort((a, b) => a.monsters - b.monsters);
+    let minMonsters = activePlayers[0].monsters;
+    let playersWithMinMonsters = activePlayers.filter(player => player.monsters === minMonsters);
+    if (playersWithMinMonsters.length > 1) {
+        playersWithMinMonsters = playersWithMinMonsters.sort(() => Math.random() - 0.5);
+    }
+    return playersWithMinMonsters.map(player => player.number);
+}
+
+function endTurn() {
+    if (gameState.currentPlayer < gameState.turnOrder.length - 1) {
+        gameState.currentPlayer++;
+    } else {
+        startNewRound();
+    }
+    updateGameState();
+}
 
 function updateGameState() {
     io.emit('updateGameState', gameState);
@@ -99,10 +128,47 @@ function resolveConflict(row1, col1, row2, col2) {
         monster1.type === 'W' && monster2.type === 'G' ||
         monster1.type === 'G' && monster2.type === 'V') {
         gameState.board[row2][col2] = null;
+        players[monster2.player - 1].monsters--;
+        checkElimination(monster2.player);
     } else if (monster1.type === monster2.type) {
         gameState.board[row1][col1] = null;
         gameState.board[row2][col2] = null;
+        players[monster1.player - 1].monsters--;
+        players[monster2.player - 1].monsters--;
+        checkElimination(monster1.player);
+        checkElimination(monster2.player);
     }
+}
+
+function checkElimination(playerNumber) {
+    if (players[playerNumber - 1].monsters >= 10) {
+        gameState.eliminatedPlayers.push(playerNumber);
+        if (gameState.eliminatedPlayers.length === players.length - 1) {
+            io.emit('gameOver', gameState.turnOrder.filter(player => !gameState.eliminatedPlayers.includes(player))[0]);
+        }
+    }
+}
+
+function isValidPlacement(playerNumber, row, col) {
+    if (playerNumber === 1 && col === 0) return true;
+    if (playerNumber === 2 && col === 9) return true;
+    if (playerNumber === 3 && row === 0) return true;
+    if (playerNumber === 4 && row === 9) return true;
+    return false;
+}
+
+function isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) {
+    const movingMonster = gameState.board[fromRow][fromCol];
+    if (!movingMonster || movingMonster.player !== playerNumber) return false;
+    if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
+
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+
+    if (rowDiff === colDiff && rowDiff <= 2) return true;
+    if (rowDiff === 0 || colDiff === 0) return true;
+
+    return false;
 }
 
 server.listen(3000, () => {

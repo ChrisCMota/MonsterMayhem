@@ -1,6 +1,7 @@
 const socket = io();
 
 let playerNumber;
+let gameState;
 
 socket.on('playerNumber', (number) => {
     playerNumber = number;
@@ -12,8 +13,14 @@ socket.on('startGame', (players) => {
     updateStats(players);
 });
 
-socket.on('updateGameState', (gameState) => {
-    updateBoard(gameState.board);
+socket.on('updateGameState', (state) => {
+    gameState = state;
+    updateBoard(state.board);
+    updateTurnInfo(state);
+});
+
+socket.on('gameOver', (winner) => {
+    alert(`Player ${winner} wins the game!`);
 });
 
 function initializeBoard() {
@@ -30,12 +37,25 @@ function initializeBoard() {
     }
 
     boardElement.addEventListener('click', (e) => {
-        if (e.target.classList.contains('grid-item')) {
+        if (e.target.classList.contains('grid-item') && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
             const row = e.target.dataset.row;
             const col = e.target.dataset.col;
-            const monsterType = prompt("Enter monster type (V/W/G):");
-            if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
-                socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+            if (gameState.rounds === 1) {
+                const monsterType = prompt("Enter monster type (V/W/G):");
+                if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
+                    socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                }
+            } else {
+                if (gameState.board[row][col] === null) {
+                    const monsterType = prompt("Enter monster type (V/W/G):");
+                    if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
+                        socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                    }
+                } else {
+                    const fromRow = prompt("Enter row of the monster to move:");
+                    const fromCol = prompt("Enter col of the monster to move:");
+                    socket.emit('moveMonster', { from: { fromRow, fromCol }, to: { row, col } });
+                }
             }
         }
     });
@@ -67,4 +87,9 @@ function updateStats(players) {
         Wins: ${player.wins} 
         Losses: ${player.losses}
     `).join('<br>');
+}
+
+function updateTurnInfo(state) {
+    const turnInfo = document.getElementById('turn-info');
+    turnInfo.textContent = `Player ${state.turnOrder[state.currentPlayer]}'s turn`;
 }
