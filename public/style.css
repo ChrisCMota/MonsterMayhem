@@ -11,6 +11,8 @@ body {
     grid-gap: 5px;
     margin: auto;
     margin-top: 20px;
+    background-color: lightgrey; /* Set the board color to light grey */
+    padding: 10px;
 }
 
 .row-label-container {
@@ -51,6 +53,7 @@ body {
     align-items: center;
     background-size: cover;
     background-position: center;
+    background-color: white; /* Set default background color */
 }
 
 .grid-item.player-1 { border-color: blue; }
@@ -59,15 +62,15 @@ body {
 .grid-item.player-4 { border-color: yellow; }
 
 .grid-item.vampire {
-    background-image: url('/images/vampire.jpg');
+    background-image: url('/public/image/vampire.jpg');
 }
 
 .grid-item.ghost {
-    background-image: url('/images/ghost.jpg');
+    background-image: url('/public/images/ghost.jpg');
 }
 
 .grid-item.werewolf {
-    background-image: url('/images/werewolf.jpg');
+    background-image: url('/public/images/werewolf.jpg');
 }
 
 #monster-type {
