@@ -196,6 +196,32 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     return false;
 }
 
+function resolveConflict(movingMonster, targetMonster, startRow, startCol, endRow, endCol) {
+    const outcomes = {
+        'V': { 'W': 'removeTarget', 'G': 'removeMoving' },
+        'W': { 'G': 'removeTarget', 'V': 'removeMoving' },
+        'G': { 'V': 'removeTarget', 'W': 'removeMoving' }
+    };
+    const outcome = outcomes[movingMonster.type][targetMonster.type];
+    if (outcome === 'removeTarget') {
+        removeMonster(endRow, endCol, targetMonster);
+        gameState.board[endRow][endCol] = movingMonster;
+        gameState.board[startRow][startCol] = null;
+    } else if (outcome === 'removeMoving') {
+        removeMonster(startRow, startCol, movingMonster);
+    } else {
+        removeMonster(startRow, startCol, movingMonster);
+        removeMonster(endRow, endCol, targetMonster);
+    }
+}
+
+function removeMonster(row, col, monster) {
+    const playerIndex = monster.player - 1;
+    players[playerIndex].monsters--;
+    gameState.board[row][col] = null;
+    checkElimination(monster.player);
+}
+
 function getPlayerNumber(socketId) {
     const player = players.find(player => player.id === socketId);
     return player ? player.number : null;
