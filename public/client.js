@@ -8,13 +8,11 @@ socket.on('playerNumber', (number) => {
 });
 
 socket.on('startGame', (players) => {
-    // Initialize game board and stats
     initializeBoard();
     updateStats(players);
 });
 
 socket.on('updateGameState', (gameState) => {
-    // Update the game board and stats based on the new game state
     updateBoard(gameState.board);
 });
 
