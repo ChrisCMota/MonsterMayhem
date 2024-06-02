@@ -59,3 +59,7 @@ body {
 #end-turn {
     margin: 10px 0;
 }
+
+.grid-item.selected {
+    border: 2px solid purple;
+}

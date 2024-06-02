@@ -3,6 +3,7 @@ const socket = io();
 let playerNumber;
 let gameState;
 let selectedMonster = null;
+let movePhase = false;  // Indicates if the player is in the move phase
 
 socket.on('playerNumber', (number) => {
     playerNumber = number;
@@ -57,41 +58,54 @@ function initializeBoard() {
         if (e.target.classList.contains('grid-item') && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
             const row = parseInt(e.target.dataset.row);
             const col = parseInt(e.target.dataset.col);
+            const cellContent = gameState.board[row][col];
 
-            if (!gameState.monsterPlacedThisTurn) {
+            if (!movePhase) {
+                // Placing monster phase
                 const monsterType = document.getElementById('monster-type').value;
                 if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
                     if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
+                        console.log('Placing new monster:', { playerNumber, monsterType, position: { row, col } });
                         socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                        movePhase = true;  // Switch to move phase after placing a monster
                     }
                 } else {
-                    alert("Invalid placement. You can only place one monster per turn.");
+                    console.log("Invalid placement. You can only place one monster per turn.");
                 }
             } else if (selectedMonster) {
+                // Move selected monster phase
                 if (gameState.board[row][col] === null && isValidMove(selectedMonster.row, selectedMonster.col, row, col)) {
+                    console.log('Moving monster to new position:', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col });
                     socket.emit('moveMonster', { startRow: selectedMonster.row, startCol: selectedMonster.col, endRow: row, endCol: col, playerNumber });
                     selectedMonster = null;
+                    clearHighlights();
                 } else {
-                    alert("Invalid move. Please try again.");
+                    console.log("Invalid move. Please try again.");
                 }
-            } else {
-                const cellContent = gameState.board[row][col];
-                if (cellContent && cellContent.player === playerNumber && cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
-                    selectedMonster = { row, col };
+            } else if (cellContent && cellContent.player === playerNumber) {
+                // Select a monster for movement
+                if (cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
+                    console.log('Monster selected for movement:', cellContent);
+                    selectedMonster = { row, col, monster: cellContent };
+                    highlightSelectedMonster(row, col);
                 } else {
-                    alert("You can only move monsters placed in previous rounds.");
+                    console.log("You can only move monsters placed in previous rounds.");
                 }
             }
         } else {
-            alert("It's not your turn.");
+            console.log("It's not your turn.");
         }
     });
 
     document.getElementById('end-turn').addEventListener('click', () => {
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
+            console.log('Ending turn for player:', playerNumber);
             socket.emit('endTurn');
+            selectedMonster = null;
+            clearHighlights();
+            movePhase = false;  // Reset for the next turn
         } else {
-            alert("It's not your turn.");
+            console.log("It's not your turn.");
         }
     });
 }
@@ -154,4 +168,17 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (rowDiff === 0 || colDiff === 0) return true;
 
     return false;
+}
+
+function highlightSelectedMonster(row, col) {
+    clearHighlights();
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (cell) {
+        cell.classList.add('selected');
+    }
+}
+
+function clearHighlights() {
+    const cells = document.querySelectorAll('.selected');
+    cells.forEach(cell => cell.classList.remove('selected'));
 }
