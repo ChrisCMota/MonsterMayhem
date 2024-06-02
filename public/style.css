@@ -1,0 +1,30 @@
+body {
+    background-color: black;
+    color: white;
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-gap: 5px;
+    margin: auto;
+}
+
+.grid-item {
+    width: 40px;
+    height: 40px;
+    background-color: orange;
+    border: 1px solid white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: white;
+}
+
+.grid-item.player-1 { color: blue; }
+.grid-item.player-2 { color: red; }
+.grid-item.player-3 { color: green; }
+.grid-item.player-4 { color: yellow; }
