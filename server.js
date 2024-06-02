@@ -17,7 +17,7 @@ let gameState = {
     eliminatedPlayers: [],
     turnOrder: [],
     monsterPlacedThisTurn: false,
-    monsterMovedThisTurn: false,
+    movedMonsters: {}, // Track monsters moved by their player number and round placed
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -58,17 +58,28 @@ io.on('connection', (socket) => {
     });
 
     socket.on('moveMonster', (data) => {
-        const { from, to } = data;
+        const { from, to, playerNumber } = data;
         const { fromRow, fromCol } = from;
         const { toRow, toCol } = to;
 
         const movingMonster = gameState.board[fromRow][fromCol];
 
-        if (gameState.turnOrder[gameState.currentPlayer] === movingMonster.player && !gameState.monsterMovedThisTurn) {
-            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && movingMonster.roundPlaced < gameState.rounds) {
-                gameState.board[toRow][toCol] = { ...movingMonster, roundPlaced: movingMonster.roundPlaced };
+        if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
+            if (
+                movingMonster && 
+                isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && 
+                movingMonster.roundPlaced < gameState.rounds && 
+                (!gameState.movedMonsters[playerNumber] || !gameState.movedMonsters[playerNumber][movingMonster.roundPlaced])
+            ) {
+                gameState.board[toRow][toCol] = { ...movingMonster };
                 gameState.board[fromRow][fromCol] = null;
-                gameState.monsterMovedThisTurn = true;
+
+                // Mark the monster as moved this turn
+                if (!gameState.movedMonsters[playerNumber]) {
+                    gameState.movedMonsters[playerNumber] = {};
+                }
+                gameState.movedMonsters[playerNumber][movingMonster.roundPlaced] = true;
+
                 handleConflicts(toRow, toCol);
                 console.log(`Player ${movingMonster.player} moved a monster from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
                 updateGameState();
@@ -99,7 +110,7 @@ function startNewRound() {
     gameState.rounds++;
     gameState.turnCounter = 0;
     gameState.monsterPlacedThisTurn = false;
-    gameState.monsterMovedThisTurn = false;
+    gameState.movedMonsters = {};
     if (gameState.rounds === 1) {
         gameState.turnOrder = players.map(player => player.number).sort(() => Math.random() - 0.5);
     } else {
@@ -123,7 +134,7 @@ function determineTurnOrder() {
 function endTurn() {
     gameState.turnCounter++;
     gameState.monsterPlacedThisTurn = false;
-    gameState.monsterMovedThisTurn = false;
+    gameState.movedMonsters = {};
 
     if (gameState.currentPlayer < gameState.turnOrder.length - 1) {
         gameState.currentPlayer++;

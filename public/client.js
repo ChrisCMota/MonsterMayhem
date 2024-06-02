@@ -2,6 +2,7 @@ const socket = io();
 
 let playerNumber;
 let gameState;
+let selectedMonster = null;
 
 socket.on('playerNumber', (number) => {
     playerNumber = number;
@@ -56,26 +57,30 @@ function initializeBoard() {
         if (e.target.classList.contains('grid-item') && gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
             const row = parseInt(e.target.dataset.row);
             const col = parseInt(e.target.dataset.col);
-            const monsterType = document.getElementById('monster-type').value;
 
             if (!gameState.monsterPlacedThisTurn) {
+                const monsterType = document.getElementById('monster-type').value;
                 if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
                     if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                         socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
                     }
-                } else if (!gameState.monsterMovedThisTurn) {
-                    const fromRow = prompt("Enter row of the monster to move:");
-                    const fromCol = prompt("Enter col of the monster to move:");
-                    if (gameState.board[fromRow][fromCol] && gameState.board[fromRow][fromCol].roundPlaced < gameState.rounds) {
-                        socket.emit('moveMonster', { from: { fromRow, fromCol }, to: { row, col } });
-                    } else {
-                        alert("You cannot move a monster placed this turn.");
-                    }
                 } else {
-                    alert("You can only move one monster per turn.");
+                    alert("Invalid placement. You can only place one monster per turn.");
+                }
+            } else if (selectedMonster) {
+                if (gameState.board[row][col] === null && isValidMove(playerNumber, selectedMonster.row, selectedMonster.col, row, col)) {
+                    socket.emit('moveMonster', { from: selectedMonster, to: { row, col }, playerNumber });
+                    selectedMonster = null;
+                } else {
+                    alert("Invalid move. Please try again.");
                 }
             } else {
-                alert("You can only place one monster per turn.");
+                const cellContent = gameState.board[row][col];
+                if (cellContent && cellContent.player === playerNumber && cellContent.roundPlaced < gameState.rounds && (!gameState.movedMonsters[playerNumber] || !gameState.movedMonsters[playerNumber][cellContent.roundPlaced])) {
+                    selectedMonster = { row, col };
+                } else {
+                    alert("You can only move monsters placed in previous rounds.");
+                }
             }
         } else {
             alert("It's not your turn.");
@@ -136,5 +141,19 @@ function isValidPlacement(playerNumber, row, col) {
     if (playerNumber === 2 && col === 9) return true;
     if (playerNumber === 3 && row === 0) return true;
     if (playerNumber === 4 && row === 9) return true;
+    return false;
+}
+
+function isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) {
+    const movingMonster = gameState.board[fromRow][fromCol];
+    if (!movingMonster || movingMonster.player !== playerNumber) return false;
+    if (toRow < 0 || toRow >= 10 || toCol < 0 || toCol >= 10) return false;
+
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+
+    if (rowDiff === colDiff && rowDiff <= 2) return true;
+    if (rowDiff === 0 || colDiff === 0) return true;
+
     return false;
 }
