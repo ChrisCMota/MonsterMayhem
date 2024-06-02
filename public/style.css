@@ -28,3 +28,11 @@ body {
 .grid-item.player-2 { color: red; }
 .grid-item.player-3 { color: green; }
 .grid-item.player-4 { color: yellow; }
+
+#monster-type {
+    margin: 10px 0;
+}
+
+#end-turn {
+    margin: 10px 0;
+}

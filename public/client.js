@@ -42,13 +42,13 @@ function initializeBoard() {
             const row = e.target.dataset.row;
             const col = e.target.dataset.col;
             if (gameState.rounds === 1) {
-                const monsterType = prompt("Enter monster type (V/W/G):");
+                const monsterType = document.getElementById('monster-type').value;
                 if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                     socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
                 }
             } else {
                 if (gameState.board[row][col] === null) {
-                    const monsterType = prompt("Enter monster type (V/W/G):");
+                    const monsterType = document.getElementById('monster-type').value;
                     if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
                         socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
                     }
@@ -59,6 +59,10 @@ function initializeBoard() {
                 }
             }
         }
+    });
+
+    document.getElementById('end-turn').addEventListener('click', () => {
+        socket.emit('endTurn');
     });
 }
 
