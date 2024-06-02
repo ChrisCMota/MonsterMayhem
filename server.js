@@ -17,7 +17,7 @@ let gameState = {
     eliminatedPlayers: [],
     turnOrder: [],
     monsterPlacedThisTurn: false,
-    movedMonsters: {}, // Track monsters moved by their player number and round placed
+    movedMonsters: {},
 };
 
 const monsterTypes = ['V', 'W', 'G'];
@@ -62,13 +62,13 @@ io.on('connection', (socket) => {
         const { fromRow, fromCol } = from;
         const { toRow, toCol } = to;
 
-        const movingMonster = gameState.board[fromRow][fromCol];
+        if (gameState.board[fromRow] && gameState.board[fromRow][fromCol]) {
+            const movingMonster = gameState.board[fromRow][fromCol];
 
-        if (gameState.turnOrder[gameState.currentPlayer] === playerNumber) {
             if (
-                movingMonster && 
-                isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && 
-                movingMonster.roundPlaced < gameState.rounds && 
+                gameState.turnOrder[gameState.currentPlayer] === playerNumber &&
+                isValidMove(playerNumber, fromRow, fromCol, toRow, toCol) &&
+                movingMonster.roundPlaced < gameState.rounds &&
                 (!gameState.movedMonsters[playerNumber] || !gameState.movedMonsters[playerNumber][movingMonster.roundPlaced])
             ) {
                 gameState.board[toRow][toCol] = { ...movingMonster };
@@ -87,7 +87,7 @@ io.on('connection', (socket) => {
                 console.log(`Invalid move by Player ${movingMonster.player} from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
             }
         } else {
-            console.log(`Player ${movingMonster.player} is not allowed to move a monster now.`);
+            console.log(`Invalid move attempt from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol})`);
         }
     });
 
