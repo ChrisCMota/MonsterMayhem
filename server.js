@@ -146,23 +146,30 @@ function updateGameState() {
     io.emit('updateGameState', gameState);
 }
 
-function handleConflicts(row, col) {
-    const currentMonster = gameState.board[row][col];
-    const conflictingMonster = gameState.board[row][col];
-
-    if (conflictingMonster) {
-        if ((currentMonster.type === 'V' && conflictingMonster.type === 'W') ||
-            (currentMonster.type === 'W' && conflictingMonster.type === 'G') ||
-            (currentMonster.type === 'G' && conflictingMonster.type === 'V')) {
-            gameState.board[row][col] = currentMonster;
-        } else if (currentMonster.type === conflictingMonster.type) {
-            gameState.board[row][col] = null;
-        } else {
-            gameState.board[row][col] = conflictingMonster;
-        }
-        players[conflictingMonster.player - 1].monsters--;
-        checkElimination(conflictingMonster.player);
+function resolveConflict(movingMonster, targetMonster, startRow, startCol, endRow, endCol) {
+    const outcomes = {
+        'V': { 'W': 'removeTarget', 'G': 'removeMoving' },
+        'W': { 'G': 'removeTarget', 'V': 'removeMoving' },
+        'G': { 'V': 'removeTarget', 'W': 'removeMoving' }
+    };
+    const outcome = outcomes[movingMonster.type][targetMonster.type];
+    if (outcome === 'removeTarget') {
+        removeMonster(endRow, endCol, targetMonster);
+        gameState.board[endRow][endCol] = movingMonster;
+        gameState.board[startRow][startCol] = null;
+    } else if (outcome === 'removeMoving') {
+        removeMonster(startRow, startCol, movingMonster);
+    } else {
+        removeMonster(startRow, startCol, movingMonster);
+        removeMonster(endRow, endCol, targetMonster);
     }
+}
+
+function removeMonster(row, col, monster) {
+    const playerIndex = monster.player - 1;
+    players[playerIndex].monsters--;
+    gameState.board[row][col] = null;
+    checkElimination(monster.player);
 }
 
 function checkElimination(playerNumber) {
@@ -194,32 +201,6 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     if (rowDiff === 0 || colDiff === 0) return true;
 
     return false;
-}
-
-function resolveConflict(movingMonster, targetMonster, startRow, startCol, endRow, endCol) {
-    const outcomes = {
-        'V': { 'W': 'removeTarget', 'G': 'removeMoving' },
-        'W': { 'G': 'removeTarget', 'V': 'removeMoving' },
-        'G': { 'V': 'removeTarget', 'W': 'removeMoving' }
-    };
-    const outcome = outcomes[movingMonster.type][targetMonster.type];
-    if (outcome === 'removeTarget') {
-        removeMonster(endRow, endCol, targetMonster);
-        gameState.board[endRow][endCol] = movingMonster;
-        gameState.board[startRow][startCol] = null;
-    } else if (outcome === 'removeMoving') {
-        removeMonster(startRow, startCol, movingMonster);
-    } else {
-        removeMonster(startRow, startCol, movingMonster);
-        removeMonster(endRow, endCol, targetMonster);
-    }
-}
-
-function removeMonster(row, col, monster) {
-    const playerIndex = monster.player - 1;
-    players[playerIndex].monsters--;
-    gameState.board[row][col] = null;
-    checkElimination(monster.player);
 }
 
 function getPlayerNumber(socketId) {

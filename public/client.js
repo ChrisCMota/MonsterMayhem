@@ -49,6 +49,7 @@ function initializeBoard() {
             cell.classList.add('grid-item');
             cell.dataset.row = i;
             cell.dataset.col = j;
+            cell.addEventListener('click', handleCellClick);
             cell.setAttribute('draggable', true);
             cell.addEventListener('dragstart', handleDragStart);
             cell.addEventListener('dragover', handleDragOver);
@@ -70,6 +71,27 @@ function initializeBoard() {
     });
 }
 
+function handleCellClick(event) {
+    const cell = event.target;
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+    const cellContent = gameState.board[row][col];
+
+    if (!movePhase) {
+        // Placing monster phase
+        const monsterType = document.getElementById('monster-type').value;
+        if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
+            if (monsterType && ['V', 'W', 'G'].includes(monsterType)) {
+                console.log('Placing new monster:', { playerNumber, monsterType, position: { row, col } });
+                socket.emit('placeMonster', { playerNumber, monsterType, position: { row, col } });
+                movePhase = true; // Switch to move phase after placing a monster
+            }
+        } else {
+            console.log("Invalid placement. You can only place one monster per turn.");
+        }
+    }
+}
+
 function handleDragStart(event) {
     const cell = event.target;
     const row = parseInt(cell.dataset.row);
@@ -79,6 +101,7 @@ function handleDragStart(event) {
     if (cellContent && cellContent.player === playerNumber && cellContent.roundPlaced < gameState.rounds && !gameState.movedMonsters.has(cellContent)) {
         selectedMonster = { row, col, monster: cellContent };
         event.dataTransfer.setData('text/plain', JSON.stringify(selectedMonster));
+        event.dataTransfer.effectAllowed = 'move';
     } else {
         event.preventDefault();
     }
@@ -86,6 +109,7 @@ function handleDragStart(event) {
 
 function handleDragOver(event) {
     event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
 }
 
 function handleDrop(event) {
