@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber && !gameState.monsterPlacedThisTurn) {
             if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-                gameState.board[row][col] = { type: monsterType, player: playerNumber, roundPlaced: gameState.rounds, turnPlaced: gameState.turnCounter };
+                gameState.board[row][col] = { type: monsterType, player: playerNumber, roundPlaced: gameState.rounds };
                 players[playerNumber - 1].monsters++;
                 gameState.monsterPlacedThisTurn = true;
                 console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
@@ -65,8 +65,8 @@ io.on('connection', (socket) => {
         const movingMonster = gameState.board[fromRow][fromCol];
 
         if (gameState.turnOrder[gameState.currentPlayer] === movingMonster.player && !gameState.monsterMovedThisTurn) {
-            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && (movingMonster.roundPlaced < gameState.rounds || (movingMonster.roundPlaced === gameState.rounds && movingMonster.turnPlaced < gameState.turnCounter))) {
-                gameState.board[toRow][toCol] = { ...movingMonster, roundPlaced: movingMonster.roundPlaced, turnPlaced: movingMonster.turnPlaced };
+            if (movingMonster && isValidMove(movingMonster.player, fromRow, fromCol, toRow, toCol) && movingMonster.roundPlaced < gameState.rounds) {
+                gameState.board[toRow][toCol] = { ...movingMonster, roundPlaced: movingMonster.roundPlaced };
                 gameState.board[fromRow][fromCol] = null;
                 gameState.monsterMovedThisTurn = true;
                 handleConflicts(toRow, toCol);
@@ -124,14 +124,6 @@ function endTurn() {
     gameState.turnCounter++;
     gameState.monsterPlacedThisTurn = false;
     gameState.monsterMovedThisTurn = false;
-    for (let i = 0; i < 10; i++) {
-        for (let j = 0; j < 10; j++) {
-            const monster = gameState.board[i][j];
-            if (monster) {
-                monster.placedThisTurn = false;
-            }
-        }
-    }
 
     if (gameState.currentPlayer < gameState.turnOrder.length - 1) {
         gameState.currentPlayer++;
@@ -147,42 +139,20 @@ function updateGameState() {
 
 function handleConflicts(row, col) {
     const currentMonster = gameState.board[row][col];
-    let otherMonsters = [];
+    const conflictingMonster = gameState.board[row][col];
 
-    for (let r = 0; r < 10; r++) {
-        for (let c = 0; c < 10; c++) {
-            if (r === row && c === col) continue;
-            const monster = gameState.board[r][c];
-            if (monster && monster.player !== currentMonster.player) {
-                otherMonsters.push({ row: r, col: c, monster });
-            }
+    if (conflictingMonster) {
+        if ((currentMonster.type === 'V' && conflictingMonster.type === 'W') ||
+            (currentMonster.type === 'W' && conflictingMonster.type === 'G') ||
+            (currentMonster.type === 'G' && conflictingMonster.type === 'V')) {
+            gameState.board[row][col] = currentMonster;
+        } else if (currentMonster.type === conflictingMonster.type) {
+            gameState.board[row][col] = null;
+        } else {
+            gameState.board[row][col] = conflictingMonster;
         }
-    }
-
-    for (let { row: otherRow, col: otherCol, monster: otherMonster } of otherMonsters) {
-        if (row === otherRow && col === otherCol) {
-            resolveConflict(row, col, otherRow, otherCol);
-        }
-    }
-}
-
-function resolveConflict(row1, col1, row2, col2) {
-    const monster1 = gameState.board[row1][col1];
-    const monster2 = gameState.board[row2][col2];
-
-    if (monster1.type === 'V' && monster2.type === 'W' ||
-        monster1.type === 'W' && monster2.type === 'G' ||
-        monster1.type === 'G' && monster2.type === 'V') {
-        gameState.board[row2][col2] = null;
-        players[monster2.player - 1].monsters--;
-        checkElimination(monster2.player);
-    } else if (monster1.type === monster2.type) {
-        gameState.board[row1][col1] = null;
-        gameState.board[row2][col2] = null;
-        players[monster1.player - 1].monsters--;
-        players[monster2.player - 1].monsters--;
-        checkElimination(monster1.player);
-        checkElimination(monster2.player);
+        players[conflictingMonster.player - 1].monsters--;
+        checkElimination(conflictingMonster.player);
     }
 }
 
