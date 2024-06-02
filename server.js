@@ -43,8 +43,13 @@ io.on('connection', (socket) => {
         const { row, col } = position;
 
         if (gameState.turnOrder[gameState.currentPlayer] === playerNumber && !gameState.monsterPlacedThisTurn) {
-            if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
-                gameState.board[row][col] = { type: monsterType, player: playerNumber, roundPlaced: gameState.rounds };
+            if (isValidPlacement(playerNumber, row, col)) {
+                const newMonster = { type: monsterType, player: playerNumber, roundPlaced: gameState.rounds };
+                if (gameState.board[row][col] === null) {
+                    gameState.board[row][col] = newMonster;
+                } else {
+                    resolveConflict(newMonster, gameState.board[row][col], row, col);
+                }
                 players[playerNumber - 1].monsters++;
                 gameState.monsterPlacedThisTurn = true;
                 console.log(`Player ${playerNumber} placed a ${monsterType} at (${row}, ${col})`);
@@ -71,12 +76,12 @@ io.on('connection', (socket) => {
             ) {
                 const targetCell = gameState.board[endRow][endCol];
                 if (targetCell) {
-                    if (targetCell.player === movingMonster.player) return;
-                    resolveConflict(movingMonster, targetCell, startRow, startCol, endRow, endCol);
+                    const winnerMonster = resolveConflict(movingMonster, targetCell, endRow, endCol);
+                    gameState.board[endRow][endCol] = winnerMonster;
                 } else {
-                    gameState.board[startRow][startCol] = null;
                     gameState.board[endRow][endCol] = movingMonster;
                 }
+                gameState.board[startRow][startCol] = null;
 
                 gameState.movedMonsters.add(movingMonster);
                 console.log(`Player ${movingMonster.player} moved a monster from (${startRow}, ${startCol}) to (${endRow}, ${endCol})`);
@@ -146,7 +151,7 @@ function updateGameState() {
     io.emit('updateGameState', gameState);
 }
 
-function resolveConflict(movingMonster, targetMonster, startRow, startCol, endRow, endCol) {
+function resolveConflict(movingMonster, targetMonster, row, col) {
     const outcomes = {
         'V': { 'W': 'removeTarget', 'G': 'removeMoving' },
         'W': { 'G': 'removeTarget', 'V': 'removeMoving' },
@@ -154,14 +159,15 @@ function resolveConflict(movingMonster, targetMonster, startRow, startCol, endRo
     };
     const outcome = outcomes[movingMonster.type][targetMonster.type];
     if (outcome === 'removeTarget') {
-        removeMonster(endRow, endCol, targetMonster);
-        gameState.board[endRow][endCol] = movingMonster;
-        gameState.board[startRow][startCol] = null;
+        removeMonster(row, col, targetMonster);
+        return movingMonster;
     } else if (outcome === 'removeMoving') {
-        removeMonster(startRow, startCol, movingMonster);
+        removeMonster(row, col, movingMonster);
+        return targetMonster;
     } else {
-        removeMonster(startRow, startCol, movingMonster);
-        removeMonster(endRow, endCol, targetMonster);
+        removeMonster(row, col, movingMonster);
+        removeMonster(row, col, targetMonster);
+        return null;
     }
 }
 
