@@ -42,6 +42,7 @@ io.on('connection', (socket) => {
         if (isValidPlacement(playerNumber, row, col) && gameState.board[row][col] === null) {
             gameState.board[row][col] = { type: monsterType, player: playerNumber };
             players[playerNumber - 1].monsters++;
+            endTurn();
             updateGameState();
         }
     });
@@ -57,6 +58,7 @@ io.on('connection', (socket) => {
             gameState.board[toRow][toCol] = movingMonster;
             gameState.board[fromRow][fromCol] = null;
             handleConflicts(toRow, toCol);
+            endTurn();
             updateGameState();
         }
     });
@@ -96,11 +98,9 @@ function endTurn() {
     } else {
         startNewRound();
     }
-    updateGameState();
 }
 
 function updateGameState() {
-    console.log('Updating game state:', gameState);
     io.emit('updateGameState', gameState);
 }
 
