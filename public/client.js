@@ -27,26 +27,29 @@ socket.on('gameOver', (winner) => {
 function initializeBoard() {
     const boardElement = document.getElementById('board');
     boardElement.innerHTML = '';
-    
-    const rowLabelContainer = document.createElement('div');
-    rowLabelContainer.className = 'row-label-container';
-    for (let i = 0; i < 10; i++) {
-        const rowLabel = document.createElement('div');
-        rowLabel.className = 'row-label';
-        rowLabel.textContent = i;
-        rowLabelContainer.appendChild(rowLabel);
+
+    // Add top row labels
+    const topRow = document.createElement('div');
+    topRow.className = 'grid-row';
+    topRow.appendChild(document.createElement('div')); // Empty corner for alignment
+    for (let j = 0; j < 10; j++) {
+        const label = document.createElement('div');
+        label.className = 'grid-label';
+        label.textContent = j;
+        topRow.appendChild(label);
     }
-    boardElement.appendChild(rowLabelContainer);
+    boardElement.appendChild(topRow);
 
     for (let i = 0; i < 10; i++) {
         const row = document.createElement('div');
-        row.className = 'row';
-        
-        const colLabel = document.createElement('div');
-        colLabel.className = 'col-label';
-        colLabel.textContent = i;
-        row.appendChild(colLabel);
-        
+        row.className = 'grid-row';
+
+        // Add row label
+        const label = document.createElement('div');
+        label.className = 'grid-label';
+        label.textContent = i;
+        row.appendChild(label);
+
         for (let j = 0; j < 10; j++) {
             const cell = document.createElement('div');
             cell.classList.add('grid-item');

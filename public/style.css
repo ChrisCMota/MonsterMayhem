@@ -7,41 +7,13 @@ body {
 
 .grid-container {
     display: grid;
-    grid-template-columns: auto repeat(10, 40px);
-    grid-gap: 5px;
+    grid-template-columns: 20px repeat(10, 40px);
+    grid-template-rows: 20px repeat(10, 40px);
+    grid-gap: 0px;
     margin: auto;
     margin-top: 20px;
-    background-color: lightgrey; /* Set the board color to light grey */
+    background-color: lightgrey;
     padding: 10px;
-}
-
-.row-label-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-right: 5px;
-}
-
-.row-label {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.row {
-    display: flex;
-    align-items: center;
-}
-
-.col-label {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .grid-item {
@@ -62,15 +34,22 @@ body {
 .grid-item.player-4 { border-color: yellow; }
 
 .grid-item.vampire {
-    background-image: url('/public/image/vampire.jpg');
+    background-image: url('/image/vampire.jpg');
 }
 
 .grid-item.ghost {
-    background-image: url('/public/images/ghost.jpg');
+    background-image: url('/image/ghost.jpg');
 }
 
 .grid-item.werewolf {
-    background-image: url('/public/images/werewolf.jpg');
+    background-image: url('/image/werewolf.jpg');
+}
+
+.grid-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
 }
 
 #monster-type {
